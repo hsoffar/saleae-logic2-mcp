@@ -153,3 +153,90 @@ def test_saleae_start_capture_wraps_adapter_error(monkeypatch: pytest.MonkeyPatc
     assert out["ok"] is False
     assert out["error"]["type"] == "RuntimeError"
     assert out["error"]["message"] == "boom"
+
+
+@pytest.mark.parametrize(
+    ("fn_name", "args", "kwargs"),
+    [
+        ("saleae_connect", [], {}),
+        ("saleae_disconnect", [], {}),
+        ("saleae_status", [], {}),
+        ("saleae_list_devices", [], {}),
+        ("saleae_wait_capture", ["cap-1"], {}),
+        ("saleae_stop_capture", ["cap-1"], {}),
+        ("saleae_close_capture", ["cap-1"], {}),
+        ("saleae_save_capture", ["cap-1", "/tmp/x.sal"], {}),
+        ("saleae_load_capture", ["/tmp/x.sal"], {}),
+        ("saleae_add_analyzer", ["cap-1", "SPI"], {}),
+        ("saleae_export_data_table", ["cap-1", "/tmp/t.csv", ["an-1"]], {}),
+        ("saleae_read_analog", [[0]], {}),
+        ("saleae_read_digital", [[0]], {}),
+        ("saleae_export_raw_csv", ["cap-1", "/tmp/raw"], {}),
+        ("saleae_read_mixed", [[0], [1]], {}),
+        ("saleae_measure_frequency", [0], {}),
+        ("saleae_measure_pulse_width", [0], {}),
+        ("saleae_count_edges", [0], {}),
+        ("saleae_decode_uart", [0], {}),
+        ("saleae_decode_i2c", [0, 1], {}),
+        ("saleae_decode_spi", [0, 1, 2], {}),
+        ("saleae_read_on_trigger", [[1], 0], {}),
+        ("saleae_wait_for_voltage", [0, 1.2], {}),
+        ("saleae_wait_for_signal", [0], {}),
+        ("saleae_get_device_info", [], {}),
+    ],
+)
+def test_tool_wrappers_return_ok(monkeypatch: pytest.MonkeyPatch, fn_name: str, args: list, kwargs: dict):
+    adapter_method = fn_name.replace("saleae_", "")
+
+    class _FakeAdapter:
+        def __getattr__(self, _name):
+            return lambda *a, **k: {"m": _name, "args": list(a), "kwargs": k}
+
+    monkeypatch.setattr(server, "adapter", _FakeAdapter())
+    out = getattr(server, fn_name)(*args, **kwargs)
+    assert out["ok"] is True
+    assert out["data"]["m"] == adapter_method
+
+
+@pytest.mark.parametrize(
+    ("fn_name", "args", "kwargs"),
+    [
+        ("saleae_connect", [], {}),
+        ("saleae_disconnect", [], {}),
+        ("saleae_status", [], {}),
+        ("saleae_list_devices", [], {}),
+        ("saleae_wait_capture", ["cap-1"], {}),
+        ("saleae_stop_capture", ["cap-1"], {}),
+        ("saleae_close_capture", ["cap-1"], {}),
+        ("saleae_save_capture", ["cap-1", "/tmp/x.sal"], {}),
+        ("saleae_load_capture", ["/tmp/x.sal"], {}),
+        ("saleae_add_analyzer", ["cap-1", "SPI"], {}),
+        ("saleae_export_data_table", ["cap-1", "/tmp/t.csv", ["an-1"]], {}),
+        ("saleae_read_analog", [[0]], {}),
+        ("saleae_read_digital", [[0]], {}),
+        ("saleae_export_raw_csv", ["cap-1", "/tmp/raw"], {}),
+        ("saleae_read_mixed", [[0], [1]], {}),
+        ("saleae_measure_frequency", [0], {}),
+        ("saleae_measure_pulse_width", [0], {}),
+        ("saleae_count_edges", [0], {}),
+        ("saleae_decode_uart", [0], {}),
+        ("saleae_decode_i2c", [0, 1], {}),
+        ("saleae_decode_spi", [0, 1, 2], {}),
+        ("saleae_read_on_trigger", [[1], 0], {}),
+        ("saleae_wait_for_voltage", [0, 1.2], {}),
+        ("saleae_wait_for_signal", [0], {}),
+        ("saleae_get_device_info", [], {}),
+    ],
+)
+def test_tool_wrappers_return_err(monkeypatch: pytest.MonkeyPatch, fn_name: str, args: list, kwargs: dict):
+    class _FakeAdapter:
+        def __getattr__(self, _name):
+            def _raise(*_a, **_k):
+                raise RuntimeError(f"{_name} boom")
+
+            return _raise
+
+    monkeypatch.setattr(server, "adapter", _FakeAdapter())
+    out = getattr(server, fn_name)(*args, **kwargs)
+    assert out["ok"] is False
+    assert out["error"]["type"] == "RuntimeError"
