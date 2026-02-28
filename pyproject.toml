@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "saleae-mcp-server"
+version = "0.1.0"
+description = "MCP server for Saleae Logic 2 automation"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "mcp>=1.0.0",
+  "logic2-automation>=1.0.0",
+]
+
+[project.scripts]
+saleae-mcp-server = "saleae_mcp.server:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
