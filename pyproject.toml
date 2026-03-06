@@ -8,6 +8,15 @@ version = "0.1.0"
 description = "MCP server for Saleae Logic 2 automation"
 readme = "README.md"
 requires-python = ">=3.8"
+license = { text = "Apache-2.0" }
+authors = [
+  { name = "Hossam Soffar" },
+]
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+]
 dependencies = [
   "mcp>=1.0.0",
   "logic2-automation>=1.0.0",

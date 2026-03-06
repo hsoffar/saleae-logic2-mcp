@@ -216,3 +216,9 @@ All tools return `{"ok": true, "data": ...}` on success or `{"ok": false, "error
 - API compatibility is best-effort across Saleae automation library versions. The adapter uses `_call_first()` to try multiple method names for cross-version support.
 - `decode_uart` uses the analyzer named `"Async Serial"` (Logic 2 naming). Older Logic versions may differ.
 - `wait_for_voltage` and `wait_for_signal` block until the condition is met or timeout expires.
+
+## License
+
+This project is licensed under Apache-2.0. See `LICENSE` for full terms.
+
+Redistributions must preserve attribution and notices. See `NOTICE`.

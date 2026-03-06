@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+title: "saleae-logic2-mcp"
+message: "If you use this project, please cite it using the metadata below."
+type: software
+authors:
+  - family-names: "Soffar"
+    given-names: "Hossam"
+repository-code: "https://github.com/hsoffar/saleae-logic2-mcp"
+url: "https://github.com/hsoffar/saleae-logic2-mcp"
+license: "Apache-2.0"
+version: "0.1.0"
+date-released: "2026-03-06"
