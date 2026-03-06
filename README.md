@@ -2,18 +2,16 @@
 
 [Saleae Logic Analyzers](https://www.saleae.com/) are USB-connected tools used to inspect and decode digital signals (GPIO, UART, I2C, SPI) during hardware and firmware development.
 
-This project is an MCP server for Saleae Logic 2. It exposes logic analyzer actions (capture, decode, measure, export) as MCP tools for Claude, Codex, VS Code MCP clients, and other MCP hosts.
+This project brings Saleae Logic 2 into AI-assisted embedded debugging.
+It exposes capture, decode, timing measurement, and export workflows as MCP tools for Claude, Codex, VS Code MCP agents, and other MCP hosts.
 
-## What You Get
+## Why Embedded Teams Use It
 
-- Connect/disconnect to Logic 2
-- Start/stop/wait/close/save/load captures
-- Add analyzers and export analyzer tables
-- Export raw CSV
-- One-call reads (`read_digital`, `read_analog`, `read_mixed`)
-- Signal measurements (frequency, pulse width, edge counts)
-- One-call protocol decode (UART, I2C, SPI)
-- Trigger/condition helpers (`read_on_trigger`, `wait_for_signal`, `wait_for_voltage`)
+- Fast protocol bring-up and validation for UART, I2C, and SPI
+- Repeatable capture and decode flows for firmware regression testing
+- One-call signal checks for clocks, pulses, edges, and voltage thresholds
+- Trigger-based capture for intermittent bugs and boot-sequence timing
+- Clean CSV/table export for reports, CI artifacts, and traceability
 
 ## Requirements
 
@@ -43,38 +41,57 @@ saleae-mcp-server
 
 This is a stdio MCP server (launched by MCP clients, not as an HTTP server).
 
-## MCP Client Integration
+## MCP Client Integration (Codex + Claude)
 
-Use this server block in clients that support command-based MCP servers:
+### Codex (easiest)
+
+Edit `~/.codex/config.toml` and add:
+
+```toml
+[mcp_servers.saleae]
+command = "/absolute/path/to/.venv/bin/saleae-mcp-server"
+
+[mcp_servers.saleae.env]
+SALEAE_HOST = "127.0.0.1"
+SALEAE_PORT = "10430"
+```
+
+If your environment needs module execution instead of the script entrypoint, use:
+
+```toml
+[mcp_servers.saleae]
+command = "/absolute/path/to/.venv/bin/python3"
+args = ["-m", "saleae_mcp.server"]
+cwd = "/absolute/path/to/repo"
+
+[mcp_servers.saleae.env]
+PYTHONPATH = "/absolute/path/to/repo/src"
+SALEAE_HOST = "127.0.0.1"
+SALEAE_PORT = "10430"
+```
+
+### Claude Desktop (and clients using `mcpServers` JSON)
+
+Add this block in your MCP config:
 
 ```json
 {
   "mcpServers": {
     "saleae": {
+      "type": "stdio",
       "command": "/absolute/path/to/.venv/bin/saleae-mcp-server",
-      "env": {
-        "SALEAE_HOST": "127.0.0.1",
-        "SALEAE_PORT": "10430"
-      }
+      "args": [],
+      "env": {}
     }
   }
 }
 ```
 
-### Claude (Desktop / MCP-capable clients)
+Restart Claude after saving config.
 
-Add the `mcpServers.saleae` block to your Claude MCP configuration and restart Claude.  
-Use absolute paths for the virtualenv binary.
+### VS Code and Other MCP Hosts
 
-### Codex
-
-Add the same `mcpServers.saleae` entry to your Codex MCP config, then reload the session.  
-After startup, ask Codex to run `saleae.status` or `saleae.list_devices` to verify connectivity.
-
-### VS Code and other MCP hosts
-
-For VS Code MCP extensions/agents (and similar hosts), register the same command and env values.  
-If the host supports JSON-based MCP server definitions, the snippet above works directly.
+Use the same command and env values. Most MCP clients support the same `command` + `env` pattern.
 
 ## Quick Verification Flow
 
