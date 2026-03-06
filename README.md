@@ -1,7 +1,8 @@
 # Saleae Logic 2 MCP Server
 
-MCP server for [Saleae Logic 2 Automation](https://saleae.github.io/logic2-automation/).  
-It exposes logic analyzer actions (capture, decode, measure, export) as MCP tools for Claude, Codex, VS Code MCP clients, and other MCP hosts.
+[Saleae Logic Analyzers](https://www.saleae.com/) are USB-connected tools used to inspect and decode digital signals (GPIO, UART, I2C, SPI) during hardware and firmware development.
+
+This project is an MCP server for Saleae Logic 2. It exposes logic analyzer actions (capture, decode, measure, export) as MCP tools for Claude, Codex, VS Code MCP clients, and other MCP hosts.
 
 ## What You Get
 
