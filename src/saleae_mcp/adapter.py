@@ -607,11 +607,12 @@ class SaleaeAdapter:
         duration_seconds: float = 1.0,
     ) -> dict[str, Any]:
         channels = list(dict.fromkeys([mosi_channel, miso_channel, clock_channel]))
+        bits_label = f"{bits_per_transfer} Bits per Transfer (Standard)" if bits_per_transfer == 8 else f"{bits_per_transfer} Bits per Transfer"
         settings: dict[str, Any] = {
             "MOSI": mosi_channel,
             "MISO": miso_channel,
             "Clock": clock_channel,
-            "Bits per Transfer": str(bits_per_transfer),
+            "Bits per Transfer": bits_label,
         }
         if enable_channel is not None:
             channels.append(enable_channel)
@@ -758,6 +759,95 @@ class SaleaeAdapter:
                 raise TimeoutError(
                     f"Channel {channel} did not reach '{target_state}' within {timeout_seconds}s"
                 )
+
+    def triggered_spi_capture(
+        self,
+        trigger_channel: int,
+        clock_channel: int,
+        mosi_channel: int,
+        miso_channel: int,
+        enable_channel: int | None = None,
+        after_trigger_seconds: float = 1.0,
+        bits_per_transfer: int = 8,
+        sample_rate: int = 10_000_000,
+        save_dir: str = ".",
+        device_id: str | None = None,
+    ) -> dict[str, Any]:
+        from datetime import datetime
+
+        self._require_manager()
+
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        save_dir = os.path.abspath(os.path.expanduser(save_dir))
+        os.makedirs(save_dir, exist_ok=True)
+        sal_path = os.path.join(save_dir, f"spi_capture_{ts}.sal")
+        csv_path = os.path.join(save_dir, f"spi_decoded_{ts}.csv")
+
+        all_channels = list(dict.fromkeys(
+            [trigger_channel, clock_channel, mosi_channel, miso_channel]
+            + ([enable_channel] if enable_channel is not None else [])
+        ))
+        cfg_kwargs: dict[str, Any] = {
+            "device_configuration": automation.LogicDeviceConfiguration(
+                enabled_digital_channels=all_channels,
+                enabled_analog_channels=[],
+                digital_sample_rate=sample_rate,
+                glitch_filters=[],
+            ),
+            "capture_configuration": automation.CaptureConfiguration(
+                capture_mode=automation.DigitalTriggerCaptureMode(
+                    trigger_type=automation.DigitalTriggerType.RISING,
+                    trigger_channel_index=trigger_channel,
+                    linked_channels=[],
+                    trim_data_seconds=after_trigger_seconds,
+                )
+            ),
+        }
+        if device_id is not None:
+            cfg_kwargs["device_id"] = device_id
+
+        capture = _call_first(self._manager, ["start_capture"], **cfg_kwargs)
+        capture_id = str(uuid.uuid4())
+        self._captures[capture_id] = CaptureRef(id=capture_id, capture=capture)
+        self._analyzers[capture_id] = {}
+
+        _call_first(capture, ["wait", "wait_for_completion"])
+
+        bits_label = f"{bits_per_transfer} Bits per Transfer (Standard)" if bits_per_transfer == 8 else f"{bits_per_transfer} Bits per Transfer"
+        analyzer_settings: dict[str, Any] = {
+            "MOSI": mosi_channel,
+            "MISO": miso_channel,
+            "Clock": clock_channel,
+            "Bits per Transfer": bits_label,
+        }
+        if enable_channel is not None:
+            analyzer_settings["Enable"] = enable_channel
+
+        analyzer = _call_first(
+            capture, ["add_analyzer"], "SPI",
+            settings=analyzer_settings, label="SPI",
+        )
+        analyzer_id = str(uuid.uuid4())
+        self._analyzers[capture_id][analyzer_id] = analyzer
+
+        _call_first(
+            capture, ["export_data_table", "export_analyzer_table"],
+            filepath=csv_path, analyzers=[analyzer], iso8601_timestamp=True,
+        )
+        _call_first(capture, ["save_capture", "save"], sal_path)
+
+        return {
+            "capture_id": capture_id,
+            "analyzer_id": analyzer_id,
+            "trigger_channel": trigger_channel,
+            "clock_channel": clock_channel,
+            "mosi_channel": mosi_channel,
+            "miso_channel": miso_channel,
+            "enable_channel": enable_channel,
+            "sal_path": sal_path,
+            "csv_path": csv_path,
+            "timestamp": ts,
+        }
 
     def get_device_info(self, device_id: str | None = None) -> dict[str, Any]:
         self._require_manager()

@@ -496,6 +496,39 @@ def saleae_get_device_info(device_id: str | None = None) -> dict[str, Any]:
         return _err(exc)
 
 
+@mcp.tool(name="saleae.triggered_spi_capture")
+def saleae_triggered_spi_capture(
+    trigger_channel: int,
+    clock_channel: int,
+    mosi_channel: int,
+    miso_channel: int,
+    enable_channel: int | None = None,
+    after_trigger_seconds: float = 1.0,
+    bits_per_transfer: int = 8,
+    sample_rate: int = 10_000_000,
+    save_dir: str = ".",
+    device_id: str | None = None,
+) -> dict[str, Any]:
+    """Arm a rising-edge trigger on trigger_channel, capture all SPI channels in one session,
+    decode SPI, then save the session (.sal) and export the decoded trace (.csv) — both with
+    a timestamped filename. No session switching or repeated short captures."""
+    try:
+        return _ok(adapter.triggered_spi_capture(
+            trigger_channel=trigger_channel,
+            clock_channel=clock_channel,
+            mosi_channel=mosi_channel,
+            miso_channel=miso_channel,
+            enable_channel=enable_channel,
+            after_trigger_seconds=after_trigger_seconds,
+            bits_per_transfer=bits_per_transfer,
+            sample_rate=sample_rate,
+            save_dir=save_dir,
+            device_id=device_id,
+        ))
+    except Exception as exc:
+        return _err(exc)
+
+
 def main() -> None:
     os.environ.setdefault("PYTHONUNBUFFERED", "1")
     mcp.run(transport="stdio")
